@@ -28,7 +28,7 @@ Bars46\NSTree\NSTestTable::add(
 ```
 результат:
 
-ID | PARENT_ID | ACTIVE | GLOBAL_ACTIVE | SORT | NAME | LEFT_MARGIN | RIGHT_MARGIN | DEPTH_LEVEL
--- | --------- | ------ | ------------- | ---- | ---- | ----------- | ------------ | -----------
-1 | NULL | Y | Y | 1 | ROOT #1 | 1 | 2 | 1
-2 | NULL | Y | Y | 2 | ROOT #2 | 3 | 4 | 1
+| ID | PARENT_ID | ACTIVE | GLOBAL_ACTIVE | SORT | NAME | LEFT_MARGIN | RIGHT_MARGIN | DEPTH_LEVEL |
+| -- | --------- | ------ | ------------- | ---- | ---- | ----------- | ------------ | ----------- |
+| 1 | NULL | Y | Y | 1 | ROOT #1 | 1 | 2 | 1 |
+| 2 | NULL | Y | Y | 2 | ROOT #2 | 3 | 4 | 1 |
