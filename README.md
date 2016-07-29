@@ -15,20 +15,158 @@
 <li>SORT - сортировка</li>
 </ul>
 
-## Работа с деревом
+## Примеры
+
+Пример ORM-класса находится в файле lib/nstest.php
 
 ### Добавление новой записи в корень дерева
 ```php
-Bitrix\Main\Loader::includeModule("bars46.nstree");
 Bars46\NSTree\NSTestTable::add(
     array(
-        'NAME' => 'ROOT #1'
+        'NAME' => 'ROOT ROW'
     )
 );
 ```
-результат:
 
-| ID | PARENT_ID | ACTIVE | GLOBAL_ACTIVE | SORT | NAME | LEFT_MARGIN | RIGHT_MARGIN | DEPTH_LEVEL |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| 1 | NULL | Y | Y | 1 | ROOT #1 | 1 | 2 | 1 |
-| 2 | NULL | Y | Y | 2 | ROOT #2 | 3 | 4 | 1 |
+### Добавление записи в существующую ветку
+
+```php
+Bars46\NSTree\NSTestTable::add(
+    array(
+        'PARENT_ID' => $parent_node_id,
+        'NAME' => 'CHILD ROW'
+    )
+);
+```
+
+### Перемещение записи или целой ветки в новую ветку
+
+```php
+Bitrix\Main\Loader::includeModule("bars46.nstree");
+Bars46\NSTree\NSTestTable::update(
+    $id,
+    array(
+        'PARENT_ID' => $new_parent_node_id
+    )
+);
+```
+
+### Получение всего упорядоченного дерева, начиная от корня
+
+```php
+$res = Bars46\NSTree\NSTestTable::getList(
+    array(
+        'select' => array(
+            'ID',
+            'NAME'
+        ),
+        'order' => array(
+            'LEFT_MARGIN' => 'ASC'
+        )
+    )
+);
+```
+
+### Получение только корневых элементов
+
+```php
+$res = Bars46\NSTree\NSTestTable::getList(
+    array(
+        'select' => array(
+            'ID',
+            'NAME'
+        ),
+        'filter' => array(
+            '=DEPTH_LEVEL' => 1
+        ),
+        'order' => array(
+            'LEFT_MARGIN' => 'ASC'
+        )
+    )
+);
+```
+
+### Получение всех потомков конкретной ветки дерева
+
+```php
+$node = Bars46\NSTree\NSTestTable::getRow(
+    array(
+        'select' => array(
+            'LEFT_MARGIN',
+            'RIGHT_MARGIN'
+        ),
+        'filter' => array(
+            '=ID' => $node_id
+        )
+    )
+);
+$res = Bars46\NSTree\NSTestTable::getList(
+    array(
+        'select' => array(
+            'ID',
+            'NAME'
+        ),
+        'filter' => array(
+            '>LEFT_MARGIN' => $node['LEFT_MARGIN'],
+            '<RIGHT_MARGIN => $node['RIGHT_MARGIN']
+        ),
+        'order' => array(
+            'LEFT_MARGIN' => 'ASC'
+        )
+    )
+);
+```
+
+### Получение всех предков конкретной ветки дерева
+
+```php
+$node = Bars46\NSTree\NSTestTable::getRow(
+    array(
+        'select' => array(
+            'LEFT_MARGIN',
+            'RIGHT_MARGIN'
+        ),
+        'filter' => array(
+            '=ID' => $node_id
+        )
+    )
+);
+$res = Bars46\NSTree\NSTestTable::getList(
+    array(
+        'select' => array(
+            'ID',
+            'NAME'
+        ),
+        'filter' => array(
+            '<LEFT_MARGIN' => $node['LEFT_MARGIN'],
+            '>RIGHT_MARGIN => $node['RIGHT_MARGIN']
+        ),
+        'order' => array(
+            'LEFT_MARGIN' => 'ASC'
+        )
+    )
+);
+```
+
+## Транзакции
+
+Во избежание разрушения структуры дерева при совместном доступе желательно блокировать таблицу на запись и откатывать изменения при возникновении ошибок.
+Для этого служат методы **lockTable()** и **unlockTable()**
+
+```php
+$connection = Bitrix\Main\Application::getConnection();
+Bars46\NSTree\NSTestTable::lockTable();
+try {
+    Bars46\NSTree\NSTestTable::add(
+        array(
+            'PARENT_ID' => $parent_node_id,
+            'NAME' => 'CHILD ROW'
+        )
+    );
+    $connection->commitTransaction();
+} catch (\Exception $e) {
+    $connection->rollbackTransaction();
+    Bars46\NSTree\NSTestTable::unlockTable();
+    echo($e->getMessage() . "\n");
+}
+```
