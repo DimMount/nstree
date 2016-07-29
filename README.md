@@ -42,7 +42,6 @@ Bars46\NSTree\NSTestTable::add(
 ### Перемещение записи или целой ветки в новую ветку
 
 ```php
-Bitrix\Main\Loader::includeModule("bars46.nstree");
 Bars46\NSTree\NSTestTable::update(
     $id,
     array(
@@ -108,7 +107,7 @@ $res = Bars46\NSTree\NSTestTable::getList(
         ),
         'filter' => array(
             '>LEFT_MARGIN' => $node['LEFT_MARGIN'],
-            '<RIGHT_MARGIN => $node['RIGHT_MARGIN']
+            '<RIGHT_MARGIN' => $node['RIGHT_MARGIN']
         ),
         'order' => array(
             'LEFT_MARGIN' => 'ASC'
@@ -139,7 +138,7 @@ $res = Bars46\NSTree\NSTestTable::getList(
         ),
         'filter' => array(
             '<LEFT_MARGIN' => $node['LEFT_MARGIN'],
-            '>RIGHT_MARGIN => $node['RIGHT_MARGIN']
+            '>RIGHT_MARGIN' => $node['RIGHT_MARGIN']
         ),
         'order' => array(
             'LEFT_MARGIN' => 'ASC'
