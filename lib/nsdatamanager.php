@@ -175,14 +175,14 @@ class NSDataManager extends Entity\DataManager
         if (intval($data["PARENT_ID"]) > 0) {
             $arParent = self::getRow(
                 array(
-                    'select' => array(
+                    'select' => array_filter(array(
                         'ID',
-                        'ACTIVE',
-                        'GLOBAL_ACTIVE',
+	                    static::hasField('ACTIVE') ? 'ACTIVE' : null,
+	                    static::hasField('GLOBAL_ACTIVE') ? 'GLOBAL_ACTIVE' : null,
                         'DEPTH_LEVEL',
                         'LEFT_MARGIN',
                         'RIGHT_MARGIN'
-                    ),
+                    )),
                     'filter' => array(
                         '=ID' => $data["PARENT_ID"],
                     )
@@ -193,12 +193,12 @@ class NSDataManager extends Entity\DataManager
         //Find rightmost child of the parent
         $arChild = self::getRow(
             array(
-                'select' => array(
+                'select' => array_filter(array(
                     'ID',
                     'RIGHT_MARGIN',
-                    'GLOBAL_ACTIVE',
+	                static::hasField('GLOBAL_ACTIVE') ? 'GLOBAL_ACTIVE' : null,
                     'DEPTH_LEVEL'
-                ),
+                )),
                 'filter' => array(
                     '=PARENT_ID' => (intval($data["PARENT_ID"]) > 0 ? $data['PARENT_ID'] : false),
                     '<SORT'      => $data['SORT'],
@@ -217,37 +217,43 @@ class NSDataManager extends Entity\DataManager
                 "RIGHT_MARGIN" => intval($arChild["RIGHT_MARGIN"]) + 2,
                 "DEPTH_LEVEL"  => intval($arChild["DEPTH_LEVEL"]),
             );
-            //in case we adding active section
-            if ($data["ACTIVE"] != "N") {
-                //Look up GLOBAL_ACTIVE of the parent
-                //if none then take our own
-                if ($arParent)//We must inherit active from the parent
-                {
-                    $arUpdate["GLOBAL_ACTIVE"] = $arParent["ACTIVE"] == "Y" ? "Y" : "N";
-                } else //No parent was found take our own
-                {
-                    $arUpdate["GLOBAL_ACTIVE"] = "Y";
-                }
-            } else {
-                $arUpdate["GLOBAL_ACTIVE"] = "N";
+            if (static::hasField('GLOBAL_ACTIVE') && static::hasField('ACTIVE')) {
+	            //in case we adding active section
+	            if ($data["ACTIVE"] != "N") {
+	                //Look up GLOBAL_ACTIVE of the parent
+	                //if none then take our own
+	                if ($arParent)//We must inherit active from the parent
+	                {
+	                    $arUpdate["GLOBAL_ACTIVE"] = $arParent["ACTIVE"] == "Y" ? "Y" : "N";
+	                } else //No parent was found take our own
+	                {
+	                    $arUpdate["GLOBAL_ACTIVE"] = "Y";
+	                }
+	            } else {
+	                $arUpdate["GLOBAL_ACTIVE"] = "N";
+	            }
             }
         } else {
             //If we have parent, when take its left_margin
             if ($arParent) {
-                $arUpdate = array(
+                $arUpdate = array_filter(array(
                     "LEFT_MARGIN"   => intval($arParent["LEFT_MARGIN"]) + 1,
                     "RIGHT_MARGIN"  => intval($arParent["LEFT_MARGIN"]) + 2,
-                    "GLOBAL_ACTIVE" => ($arParent["GLOBAL_ACTIVE"] == "Y") && ($data["ACTIVE"] != "N") ? "Y" : "N",
+	                "GLOBAL_ACTIVE" => static::hasField('GLOBAL_ACTIVE')
+		                ? ($arParent["GLOBAL_ACTIVE"] == "Y") && ($data["ACTIVE"] != "N") ? "Y" : "N"
+		                : null,
                     "DEPTH_LEVEL"   => intval($arParent["DEPTH_LEVEL"]) + 1,
-                );
+                ));
             } else {
                 //We are only one/leftmost section in the iblock.
-                $arUpdate = array(
+                $arUpdate = array_filter(array(
                     "LEFT_MARGIN"   => 1,
                     "RIGHT_MARGIN"  => 2,
-                    "GLOBAL_ACTIVE" => $data["ACTIVE"] != "N" ? "Y" : "N",
+	                "GLOBAL_ACTIVE" => static::hasField('GLOBAL_ACTIVE')
+		                ? $data["ACTIVE"] != "N" ? "Y" : "N"
+		                : null,
                     "DEPTH_LEVEL"   => 1,
-                );
+                ));
             }
         }
 
@@ -259,8 +265,8 @@ class NSDataManager extends Entity\DataManager
             UPDATE " . $tableName . " SET
                 LEFT_MARGIN = " . $arUpdate["LEFT_MARGIN"] . "
                 ,RIGHT_MARGIN = " . $arUpdate["RIGHT_MARGIN"] . "
-                ,DEPTH_LEVEL = " . $arUpdate["DEPTH_LEVEL"] . "
-                ,GLOBAL_ACTIVE = '" . $arUpdate["GLOBAL_ACTIVE"] . "'
+                ,DEPTH_LEVEL = " . $arUpdate["DEPTH_LEVEL"] .
+	            (static::hasField('GLOBAL_ACTIE') ? ",GLOBAL_ACTIVE = '" . $arUpdate["GLOBAL_ACTIVE"] . "'": '') . "
             WHERE
                 ID = " . $id . "
         ");
@@ -302,16 +308,16 @@ class NSDataManager extends Entity\DataManager
 
         $oldRecord = self::getRow(
             array(
-                'select' => array(
+                'select' => array_filter(array(
                     'ID',
-                    'ACTIVE',
-                    'GLOBAL_ACTIVE',
+	                static::hasField('ACTIVE') ? 'ACTIVE' : null,
+	                static::hasField('GLOBAL_ACTIVE') ? 'GLOBAL_ACTIVE' : null,
                     'DEPTH_LEVEL',
                     'LEFT_MARGIN',
                     'RIGHT_MARGIN',
                     'SORT',
                     'PARENT_ID'
-                ),
+                )),
                 'filter' => array(
                     '=ID' => $id,
                 )
@@ -411,14 +417,14 @@ class NSDataManager extends Entity\DataManager
             $arParents = array();
             $rsParents = static::getList(
                 array(
-                    'select' => array(
+                    'select' => array_filter(array(
                         'ID',
-                        'ACTIVE',
-                        'GLOBAL_ACTIVE',
+	                    static::hasField('ACTIVE') ? 'ACTIVE' : null,
+	                    static::hasField('GLOBAL_ACTIVE') ? 'GLOBAL_ACTIVE' : null,
                         'DEPTH_LEVEL',
                         'LEFT_MARGIN',
                         'RIGHT_MARGIN'
-                    ),
+                    )),
                     'filter' => array(
                         '@ID' => array(
                             intval($oldRecord["PARENT_ID"]),
@@ -500,97 +506,99 @@ class NSDataManager extends Entity\DataManager
             }
         }
 
-        //Check if parent was changed
-        if (isset($data["PARENT_ID"]) && $data["PARENT_ID"] != $oldRecord["PARENT_ID"]) {
-            $arSection = static::getRow(
-                array(
-                    'select' => array(
-                        'ID',
-                        'PARENT_ID',
-                        'ACTIVE',
-                        'GLOBAL_ACTIVE',
-                        'LEFT_MARGIN',
-                        'RIGHT_MARGIN'
-                    ),
-                    'filter' => array(
-                        '=ID' => $id
-                    )
-                )
-            );
+        if (static::hasField('GLOBAL_ACTIVE')) {
+	        //Check if parent was changed
+	        if (isset($data["PARENT_ID"]) && $data["PARENT_ID"] != $oldRecord["PARENT_ID"]) {
+	            $arSection = static::getRow(
+	                array(
+	                    'select' => array(
+	                        'ID',
+	                        'PARENT_ID',
+	                        'ACTIVE',
+	                        'GLOBAL_ACTIVE',
+	                        'LEFT_MARGIN',
+	                        'RIGHT_MARGIN'
+	                    ),
+	                    'filter' => array(
+	                        '=ID' => $id
+	                    )
+	                )
+	            );
 
-            $arParent = static::getRow(
-                array(
-                    'select' => array(
-                        'ID',
-                        'GLOBAL_ACTIVE',
-                    ),
-                    'filter' => array(
-                        '=ID' => intval($data["PARENT_ID"])
-                    )
-                )
-            );
-            //If new parent is not globally active
-            //or we are not active either
-            //we must be not globally active too
-            if (($arParent && $arParent["GLOBAL_ACTIVE"] == "N") || ($data["ACTIVE"] == "N")) {
-                $connection->queryExecute("
-					UPDATE `" . $tableName . "` SET
-						GLOBAL_ACTIVE = 'N'
-					WHERE
-						LEFT_MARGIN >= " . intval($arSection["LEFT_MARGIN"]) . "
-						AND RIGHT_MARGIN <= " . intval($arSection["RIGHT_MARGIN"]) . "
-				");
-            }
-            //New parent is globally active
-            //And we WAS NOT active
-            //But is going to be
-            elseif ($arSection["ACTIVE"] == "N" && $data["ACTIVE"] == "Y") {
-                static::recalcGlobalActiveFlag($arSection);
-            }
-            //New parent is globally active
-            //And we WAS active but NOT globally active
-            //But is going to be
-            elseif (
-                (!$arParent || $arParent["GLOBAL_ACTIVE"] == "Y")
-                && $arSection["GLOBAL_ACTIVE"] == "N"
-                && ($arSection["ACTIVE"] == "Y" || $data["ACTIVE"] == "Y")
-            ) {
-                static::recalcGlobalActiveFlag($arSection);
-            }
-            //Otherwise we may not to change anything
-        }
-        //Parent not changed
-        //but we are going to change activity flag
-        elseif (isset($data["ACTIVE"]) && $data["ACTIVE"] != $oldRecord["ACTIVE"]) {
-            //Make all children globally inactive
-            if ($data["ACTIVE"] == "N") {
-                $connection->queryExecute("
-					UPDATE `" . $tableName . "` SET
-						GLOBAL_ACTIVE = 'N'
-					WHERE
-						LEFT_MARGIN >= " . intval($oldRecord["LEFT_MARGIN"]) . "
-						AND RIGHT_MARGIN <= " . intval($oldRecord["RIGHT_MARGIN"]) . "
-				");
-            } else {
-                //Check for parent activity
-                $arParent = static::getRow(
-                    array(
-                        'select' => array(
-                            'ID',
-                            'GLOBAL_ACTIVE'
-                        ),
-                        'filter' => array(
-                            '=ID' => intval($oldRecord["PARENT_ID"])
-                        )
-                    )
-                );
-                //Parent is active
-                //and we changed
-                //so need to recalc
-                if (!$arParent || $arParent["GLOBAL_ACTIVE"] == "Y") {
-                    static::recalcGlobalActiveFlag($oldRecord);
-                }
-            }
+	            $arParent = static::getRow(
+	                array(
+	                    'select' => array(
+	                        'ID',
+	                        'GLOBAL_ACTIVE',
+	                    ),
+	                    'filter' => array(
+	                        '=ID' => intval($data["PARENT_ID"])
+	                    )
+	                )
+	            );
+	            //If new parent is not globally active
+	            //or we are not active either
+	            //we must be not globally active too
+	            if (($arParent && $arParent["GLOBAL_ACTIVE"] == "N") || ($data["ACTIVE"] == "N")) {
+	                $connection->queryExecute("
+						UPDATE `" . $tableName . "` SET
+							GLOBAL_ACTIVE = 'N'
+						WHERE
+							LEFT_MARGIN >= " . intval($arSection["LEFT_MARGIN"]) . "
+							AND RIGHT_MARGIN <= " . intval($arSection["RIGHT_MARGIN"]) . "
+					");
+	            }
+	            //New parent is globally active
+	            //And we WAS NOT active
+	            //But is going to be
+	            elseif ($arSection["ACTIVE"] == "N" && $data["ACTIVE"] == "Y") {
+	                static::recalcGlobalActiveFlag($arSection);
+	            }
+	            //New parent is globally active
+	            //And we WAS active but NOT globally active
+	            //But is going to be
+	            elseif (
+	                (!$arParent || $arParent["GLOBAL_ACTIVE"] == "Y")
+	                && $arSection["GLOBAL_ACTIVE"] == "N"
+	                && ($arSection["ACTIVE"] == "Y" || $data["ACTIVE"] == "Y")
+	            ) {
+	                static::recalcGlobalActiveFlag($arSection);
+	            }
+	            //Otherwise we may not to change anything
+	        }
+	        //Parent not changed
+	        //but we are going to change activity flag
+	        elseif (isset($data["ACTIVE"]) && $data["ACTIVE"] != $oldRecord["ACTIVE"]) {
+	            //Make all children globally inactive
+	            if ($data["ACTIVE"] == "N") {
+	                $connection->queryExecute("
+						UPDATE `" . $tableName . "` SET
+							GLOBAL_ACTIVE = 'N'
+						WHERE
+							LEFT_MARGIN >= " . intval($oldRecord["LEFT_MARGIN"]) . "
+							AND RIGHT_MARGIN <= " . intval($oldRecord["RIGHT_MARGIN"]) . "
+					");
+	            } else {
+	                //Check for parent activity
+	                $arParent = static::getRow(
+	                    array(
+	                        'select' => array(
+	                            'ID',
+	                            'GLOBAL_ACTIVE'
+	                        ),
+	                        'filter' => array(
+	                            '=ID' => intval($oldRecord["PARENT_ID"])
+	                        )
+	                    )
+	                );
+	                //Parent is active
+	                //and we changed
+	                //so need to recalc
+	                if (!$arParent || $arParent["GLOBAL_ACTIVE"] == "Y") {
+	                    static::recalcGlobalActiveFlag($oldRecord);
+	                }
+	            }
+	        }
         }
 
         return $result;
@@ -633,6 +641,10 @@ class NSDataManager extends Entity\DataManager
      */
     public static function recalcGlobalActiveFlag($arSection)
     {
+    	if (!static::hasField('GLOBAL_ACTIVE')) {
+    		throw new \LogicException('Missing GLOBAL_ACTIVE field');
+	    }
+
         $entity = static::getEntity();
         $connection = $entity->getConnection();
         $tableName = $entity->getDBTableName();
@@ -746,5 +758,30 @@ class NSDataManager extends Entity\DataManager
 		");
 
         return $result;
+    }
+
+	/**
+	 * Проверяет наличие поля с указанным кодом
+	 *
+	 * @param string $field
+	 * @return bool
+	 */
+    final public static function hasField($field)
+    {
+	    /* @var mixed[]|Entity\Field[] $fieldMap  Описание полей */
+	    static $fieldMap;
+
+	    if (!isset($fieldMap)) {
+		    $fieldMap = static::getMap();
+	    }
+
+	    return array_reduce(
+		    array_keys($fieldMap),
+		    function ($result, $key) use ($field, &$fieldMap) {
+			    $item = $fieldMap[$key];
+			    return $result || ($item instanceof Entity\Field ? $item->getName() == $field : $key == $field);
+		    },
+		    false
+	    );
     }
 }
