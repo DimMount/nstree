@@ -1,3 +1,7 @@
+Данная версия модуля является устаревшей.
+
+Классы для работы с иерархическими структурами Nested Sets и Closure Table объединены в новом модуле https://github.com/DimMount/dimmount.treetables
+
 # Модуль bars46.nstree
 Модуль содержит класс **NSDataManager**, унаследованный от Bitrix\Main\Entity\DataManager, позволяющий работать с деревьями Nested Set через API ORM Битрикс.
 
