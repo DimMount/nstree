@@ -16,6 +16,8 @@ Loc::loadMessages(__FILE__);
  * Класс для работы с деревьями nested sets
  *
  * @package Bars46\NSTree
+ *
+ * @deprecated Данная версия модуля является устаревшей. Классы для работы с иерархическими структурами Nested Sets и Closure Table объединены в новом модуле https://github.com/DimMount/dimmount.treetables
  */
 class NSDataManager extends Entity\DataManager
 {
